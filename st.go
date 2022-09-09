@@ -4,8 +4,35 @@ type Set[T comparable] struct {
 	m map[T]bool
 }
 
+// New returns an empty set.
 func New[T comparable]() *Set[T] {
 	return &Set[T]{m: map[T]bool{}}
+}
+
+// Clone returns a clone of the calling set.
+func (s *Set[T]) Clone() *Set[T] {
+	ns := New[T]()
+	for v, _ := range s.m {
+		ns.m[v] = true
+	}
+	return ns
+}
+
+// ToSlice returns a slice containing the same elements of the calling set.
+func (s *Set[T]) ToSlice() []T {
+	ns := make([]T, 0, s.Length())
+	for v, _ := range s.m {
+		ns = append(ns, v)
+	}
+	return ns
+}
+
+// Equals returns true if the calling set equals s2.
+func (s *Set[T]) Equals(s2 *Set[T]) bool {
+	if s.Length() != s2.Length() {
+		return false
+	}
+	return s.IsSubset(s2)
 }
 
 // Length returns the length of the set.
@@ -39,13 +66,24 @@ func (s *Set[T]) IsSubset(s2 *Set[T]) bool {
 	return true
 }
 
+// Diff returns a set containing all elements which are present in the calling set and not in s2.
+func (s *Set[T]) Diff(s2 *Set[T]) *Set[T] {
+	cs := s.Clone()
+	for v, _ := range s2.m {
+		if _, ok := cs.m[v]; ok {
+			delete(cs.m, v)
+		}
+	}
+	return cs
+}
+
 // FromSlice returns a new set of comparable elements from the slice s.
 func FromSlice[T comparable](s []T) *Set[T] {
-	newSet := Set[T]{m: map[T]bool{}}
+	ns := New[T]()
 	for _, elem := range s {
-		newSet.m[elem] = true
+		ns.m[elem] = true
 	}
-	return &newSet
+	return ns
 }
 
 // Union returns a set containing all the elements from the given sets.
