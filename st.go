@@ -12,7 +12,7 @@ func New[T comparable]() *Set[T] {
 // Clone returns a clone of the calling set.
 func (s *Set[T]) Clone() *Set[T] {
 	ns := New[T]()
-	for v, _ := range s.m {
+	for v := range s.m {
 		ns.m[v] = true
 	}
 	return ns
@@ -21,7 +21,7 @@ func (s *Set[T]) Clone() *Set[T] {
 // ToSlice returns a slice containing the same elements of the calling set.
 func (s *Set[T]) ToSlice() []T {
 	ns := make([]T, 0, s.Length())
-	for v, _ := range s.m {
+	for v := range s.m {
 		ns = append(ns, v)
 	}
 	return ns
@@ -41,13 +41,15 @@ func (s *Set[T]) Length() int {
 }
 
 // Add adds elem to the calling set.
-func (s *Set[T]) Add(elem T) {
+func (s *Set[T]) Add(elem T) *Set[T] {
 	s.m[elem] = true
+	return s
 }
 
 // Remove removes elem from the calling set.
-func (s *Set[T]) Remove(elem T) {
+func (s *Set[T]) Remove(elem T) *Set[T] {
 	delete(s.m, elem)
+	return s
 }
 
 // Has returns true if the calling set contains elem.
@@ -58,7 +60,7 @@ func (s *Set[T]) Has(elem T) bool {
 
 // IsSubset returns True if the calling set is subset of s2.
 func (s *Set[T]) IsSubset(s2 *Set[T]) bool {
-	for e, _ := range s.m {
+	for e := range s.m {
 		if _, ok := s2.m[e]; !ok {
 			return false
 		}
@@ -66,10 +68,10 @@ func (s *Set[T]) IsSubset(s2 *Set[T]) bool {
 	return true
 }
 
-// Diff returns a set containing all elements which are present in the calling set and not in s2.
+// Diff returns a new set containing all elements which are present in the calling set and not in s2.
 func (s *Set[T]) Diff(s2 *Set[T]) *Set[T] {
 	cs := s.Clone()
-	for v, _ := range s2.m {
+	for v := range s2.m {
 		if _, ok := cs.m[v]; ok {
 			delete(cs.m, v)
 		}
@@ -132,7 +134,7 @@ func twoSetsIntersection[T comparable](s1, s2 *Set[T]) *Set[T] {
 		ls = s1
 	}
 
-	for v, _ := range ss.m {
+	for v := range ss.m {
 		if _, ok := ls.m[v]; ok {
 			intersection.Add(v)
 		}
