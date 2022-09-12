@@ -1,26 +1,26 @@
 package st
 
 type Set[T comparable] struct {
-	m map[T]bool
+	m map[T]struct{}
 }
 
-// New returns an empty set.
-func New[T comparable]() *Set[T] {
-	return &Set[T]{m: map[T]bool{}}
+// NewSet returns an empty set.
+func NewSet[T comparable]() *Set[T] {
+	return &Set[T]{m: make(map[T]struct{})}
 }
 
 // Clone returns a clone of the calling set.
 func (s *Set[T]) Clone() *Set[T] {
-	ns := New[T]()
+	ns := NewSet[T]()
 	for v := range s.m {
-		ns.m[v] = true
+		ns.Add(v)
 	}
 	return ns
 }
 
 // ToSlice returns a slice containing the same elements of the calling set.
 func (s *Set[T]) ToSlice() []T {
-	ns := make([]T, 0, s.Length())
+	ns := make([]T, 0, s.Cardinality())
 	for v := range s.m {
 		ns = append(ns, v)
 	}
@@ -29,20 +29,17 @@ func (s *Set[T]) ToSlice() []T {
 
 // Equals returns true if the calling set equals s2.
 func (s *Set[T]) Equals(s2 *Set[T]) bool {
-	if s.Length() != s2.Length() {
-		return false
-	}
-	return s.IsSubset(s2)
+	return s.Cardinality() != s2.Cardinality() && s.IsSubset(s2)
 }
 
-// Length returns the length of the set.
-func (s *Set[T]) Length() int {
+// Cardinality returns the length of the set.
+func (s *Set[T]) Cardinality() int {
 	return len(s.m)
 }
 
 // Add adds elem to the calling set.
 func (s *Set[T]) Add(elem T) *Set[T] {
-	s.m[elem] = true
+	s.m[elem] = struct{}{}
 	return s
 }
 
@@ -61,7 +58,7 @@ func (s *Set[T]) Has(elem T) bool {
 // IsSubset returns True if the calling set is subset of s2.
 func (s *Set[T]) IsSubset(s2 *Set[T]) bool {
 	for e := range s.m {
-		if _, ok := s2.m[e]; !ok {
+		if !s2.Has(e) {
 			return false
 		}
 	}
@@ -70,30 +67,45 @@ func (s *Set[T]) IsSubset(s2 *Set[T]) bool {
 
 // Diff returns a new set containing all elements which are present in the calling set and not in s2.
 func (s *Set[T]) Diff(s2 *Set[T]) *Set[T] {
-	cs := s.Clone()
-	for v := range s2.m {
-		if _, ok := cs.m[v]; ok {
-			delete(cs.m, v)
+	diff := NewSet[T]()
+	for v := range s.m {
+		if !s2.Has(v) {
+			diff.Add(v)
 		}
 	}
-	return cs
+	return diff
+}
+
+// Union returns a new set containing all elements from the calling set and s2.
+func (s *Set[T]) Union(s2 *Set[T]) *Set[T] {
+	return Union(s, s2)
+}
+
+// Intersect returns a new set containing all elements which are present in the calling set and s2.
+func (s *Set[T]) Intersect(s2 *Set[T]) *Set[T] {
+	return Intersection(s, s2)
+}
+
+// Clear deletes all elements in the calling
+func (s *Set[T]) Clear() {
+	s.m = make(map[T]struct{})
 }
 
 // FromSlice returns a new set of comparable elements from the slice s.
 func FromSlice[T comparable](s []T) *Set[T] {
-	ns := New[T]()
+	ns := NewSet[T]()
 	for _, elem := range s {
-		ns.m[elem] = true
+		ns.Add(elem)
 	}
 	return ns
 }
 
 // Union returns a set containing all the elements from the given sets.
 func Union[T comparable](sets ...*Set[T]) *Set[T] {
-	union := New[T]()
+	union := NewSet[T]()
 	for _, s := range sets {
 		for elem := range s.m {
-			union.m[elem] = true
+			union.Add(elem)
 		}
 	}
 	return union
@@ -102,12 +114,12 @@ func Union[T comparable](sets ...*Set[T]) *Set[T] {
 // Intersection returns a set containing only the elements which are present in all sets.
 func Intersection[T comparable](sets ...*Set[T]) *Set[T] {
 	if len(sets) == 0 {
-		return New[T]()
+		return NewSet[T]()
 	}
 	intersection := sets[0]
 	for i := 1; i < len(sets); i++ {
 		// Minor optimization - intersection with the empty set is the empty set, we can return.
-		if intersection.Length() == 0 || sets[i].Length() == 0 {
+		if intersection.Cardinality() == 0 || sets[i].Cardinality() == 0 {
 			break
 		}
 		intersection = twoSetsIntersection[T](intersection, sets[i])
@@ -124,9 +136,9 @@ func twoSetsIntersection[T comparable](s1, s2 *Set[T]) *Set[T] {
 		ss *Set[T]
 		ls *Set[T]
 	)
-	intersection := New[T]()
+	intersection := NewSet[T]()
 
-	if s1.Length() < s2.Length() {
+	if s1.Cardinality() < s2.Cardinality() {
 		ss = s1
 		ls = s2
 	} else {
@@ -135,7 +147,7 @@ func twoSetsIntersection[T comparable](s1, s2 *Set[T]) *Set[T] {
 	}
 
 	for v := range ss.m {
-		if _, ok := ls.m[v]; ok {
+		if ls.Has(v) {
 			intersection.Add(v)
 		}
 	}
