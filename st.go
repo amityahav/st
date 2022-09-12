@@ -1,5 +1,10 @@
 package st
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Set[T comparable] struct {
 	m map[T]struct{}
 }
@@ -29,7 +34,7 @@ func (s *Set[T]) ToSlice() []T {
 
 // Equals returns true if the calling set equals s2.
 func (s *Set[T]) Equals(s2 *Set[T]) bool {
-	return s.Cardinality() != s2.Cardinality() && s.IsSubset(s2)
+	return s.Cardinality() == s2.Cardinality() && s.IsSubset(s2)
 }
 
 // Cardinality returns the length of the set.
@@ -76,6 +81,26 @@ func (s *Set[T]) Diff(s2 *Set[T]) *Set[T] {
 	return diff
 }
 
+// SymDiff returns a set containing all elements in the calling set which are not in s2 and all elements in s2 which
+// are not in the calling set.
+func (s *Set[T]) SymDiff(s2 *Set[T]) *Set[T] {
+	sd := NewSet[T]()
+
+	for v := range s.m {
+		if !s2.Has(v) {
+			sd.Add(v)
+		}
+	}
+
+	for v := range s2.m {
+		if !s.Has(v) {
+			sd.Add(v)
+		}
+	}
+
+	return sd
+}
+
 // Union returns a new set containing all elements from the calling set and s2.
 func (s *Set[T]) Union(s2 *Set[T]) *Set[T] {
 	return Union(s, s2)
@@ -86,9 +111,50 @@ func (s *Set[T]) Intersect(s2 *Set[T]) *Set[T] {
 	return Intersection(s, s2)
 }
 
+// All returns true if all the elements in the calling set satisfy the predicate.
+func (s *Set[T]) All(pred func(T) bool) bool {
+	for e := range s.m {
+		if !pred(e) {
+			return false
+		}
+	}
+	return true
+}
+
+// Some returns true if at least one of the elements in the calling set satisfy the predicate.
+func (s *Set[T]) Some(pred func(T) bool) bool {
+	for e := range s.m {
+		if !pred(e) {
+			return false
+		}
+	}
+	return true
+}
+
+// Filter returns a new set containing all elements from the calling set which satisfy the predicate.
+func (s *Set[T]) Filter(pred func(T) bool) *Set[T] {
+	fs := NewSet[T]()
+
+	for e := range s.m {
+		if pred(e) {
+			fs.Add(e)
+		}
+	}
+	return fs
+}
+
 // Clear deletes all elements in the calling
 func (s *Set[T]) Clear() {
 	s.m = make(map[T]struct{})
+}
+
+// ToString returns a string representation of the calling set.
+func (s *Set[T]) ToString() string {
+	elements := make([]string, 0, s.Cardinality())
+	for v := range s.m {
+		elements = append(elements, fmt.Sprintf("%v", v))
+	}
+	return fmt.Sprintf("Set{%s}", strings.Join(elements, ", "))
 }
 
 // FromSlice returns a new set of comparable elements from the slice s.
