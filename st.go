@@ -9,9 +9,15 @@ type Set[T comparable] struct {
 	m map[T]struct{}
 }
 
-// NewSet returns an empty set.
-func NewSet[T comparable]() *Set[T] {
-	return &Set[T]{m: make(map[T]struct{})}
+// NewSet returns a set containing elements.
+func NewSet[T comparable](elements ...T) *Set[T] {
+	ns := &Set[T]{m: make(map[T]struct{})}
+	for _, e := range elements {
+		ns.Add(e)
+	}
+
+	return ns
+
 }
 
 // Clone returns a clone of the calling set.
@@ -148,22 +154,13 @@ func (s *Set[T]) Clear() {
 	s.m = make(map[T]struct{})
 }
 
-// ToString returns a string representation of the calling set.
-func (s *Set[T]) ToString() string {
+// String returns a string representation of the calling set.
+func (s *Set[T]) String() string {
 	elements := make([]string, 0, s.Cardinality())
 	for v := range s.m {
 		elements = append(elements, fmt.Sprintf("%v", v))
 	}
 	return fmt.Sprintf("Set{%s}", strings.Join(elements, ", "))
-}
-
-// FromSlice returns a new set of comparable elements from the slice s.
-func FromSlice[T comparable](s []T) *Set[T] {
-	ns := NewSet[T]()
-	for _, elem := range s {
-		ns.Add(elem)
-	}
-	return ns
 }
 
 // Union returns a set containing all the elements from the given sets.
